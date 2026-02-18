@@ -31,40 +31,81 @@ MentorHub es una API REST que permite:
 El proyecto sigue una arquitectura por capas limpia:
 
 ```text
-controller/
-service/
-service/impl/
-repository/
-entity/
-dto/
-security/
-exception/
-config/
+controller/    -> Exposición de endpoints REST
+service/       -> Interfaces de lógica de negocio
+service/impl/  -> Implementaciones de lógica
+repository/    -> Acceso a datos (JPA)
+entity/        -> Modelado de base de datos
+dto/           -> Objetos de transferencia de datos
+security/      -> Configuración JWT y Spring Security
+exception/     -> Manejador global de errores (GlobalExceptionHandler)
+config/        -> Configuraciones generales (Swagger, perfiles)
 
 ```
 
-### Principios aplicados:
+---
 
-* **Separación de responsabilidades:** Lógica de negocio aislada.
-* **Controllers delgados:** Sin lógica pesada.
-* **DTOs:** Para no exponer entidades directamente al cliente.
-* **Manejo global de excepciones:** Respuestas de error estandarizadas.
-* **Seguridad desacoplada:** Filtro JWT independiente.
+# 🌍 Configuración por Entorno
+
+MentorHub soporta ejecución multientorno mediante perfiles de Spring Boot, permitiendo un salto fluido entre desarrollo y producción.
+
+## 🖥️ Entorno Local (Desarrollo)
+
+**Perfil activo:** `local`
+
+### Variables de entorno necesarias:
+
+```bash
+SPRING_PROFILES_ACTIVE=local
+DB_URL_LOCAL=jdbc:postgresql://localhost:5432/mentorhub_db
+DB_USERNAME_LOCAL=postgres
+DB_PASSWORD_LOCAL=1234
+JWT_SECRET=tu_clave_secreta_super_segura
+JWT_EXPIRATION=86400000
+
+```
+
+### Ejecución:
+
+```bash
+./mvnw spring-boot:run
+
+```
+
+👉 **Swagger local:** `http://localhost:8080/swagger-ui/index.html`
+
+---
+
+## ☁️ Entorno Producción (Render + Neon)
+
+**Perfil activo:** `prod`
+
+El backend está desplegado en **Render** y la base de datos en **Neon (PostgreSQL Serverless)**.
+
+### 🔑 Configuración en Render (Environment Variables)
+
+Para el despliegue exitoso, se configuraron las siguientes variables en el panel de control:
+
+* `SPRING_PROFILES_ACTIVE`: `prod`
+* `DB_URL_PROD`: `jdbc:postgresql://ep-frosty-hill-aia4a3gi-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require`
+* `DB_USERNAME_PROD`: `neondb_owner`
+* `DB_PASSWORD_PROD`: `********`
+* `JWT_SECRET`: `[SECRET_KEY]`
+* `JWT_EXPIRATION`: `86400000`
+
+### 🚀 Endpoints Públicos
+
+* **API Host:** `https://mentorhub-api-24gj.onrender.com`
+* **Swagger Público:** [Ver Documentación Interactiva](https://mentorhub-api-24gj.onrender.com/swagger-ui/index.html)
 
 ---
 
 # 🔐 Seguridad
 
-Implementada con:
-
-* Spring Security
-* JWT (Bearer Token)
-* Filtro personalizado (`JwtFilter`)
-* Control de roles con `@PreAuthorize` o `hasRole`
-
-**Roles disponibles:** `ADMIN`, `MENTOR`, `STUDENT`.
-
-### Protección de endpoints
+* **JWT (Bearer Token):** Filtro personalizado (`JwtFilter`).
+* **Encriptación:** Contraseñas protegidas con **BCrypt**.
+* **SSL:** Obligatorio para conexiones en producción (Neon).
+* **Roles:** Control de acceso mediante `@PreAuthorize`.
 
 | Endpoint | Método | Rol requerido |
 | --- | --- | --- |
@@ -78,153 +119,48 @@ Implementada con:
 
 ---
 
-# 🗄️ Modelo de Base de Datos
+# 🗄️ Modelo de Datos (JPA)
 
-## Entidades principales
+### Entidades
 
-### User
+* **User:** Gestiona perfiles y credenciales (ADMIN, MENTOR, STUDENT).
+* **Mentorship:** Gestiona el ciclo de vida de la mentoría (PENDING, APPROVED, REJECTED).
 
-* `id` (PK)
-* `name`
-* `email` (unique)
-* `password` (encriptado con BCrypt)
-* `role` (ADMIN, MENTOR, STUDENT)
-* `active` (boolean)
-* `createdAt`
+### Relaciones
 
-### Mentorship
-
-* `id` (PK)
-* `mentor_id` (FK → User)
-* `student_id` (FK → User)
-* `status` (PENDING, APPROVED, REJECTED)
-* `createdAt`
-
-## Relaciones
-
-* Un **MENTOR** puede tener muchas mentorías.
-* Un **STUDENT** puede solicitar muchas mentorías.
-* Una mentoría pertenece a un mentor y a un estudiante de forma unívoca.
+* Un **MENTOR** puede tener múltiples mentorías.
+* Un **STUDENT** puede solicitar múltiples mentorías.
+* Relaciones `@ManyToOne` correctamente mapeadas para integridad referencial.
 
 ---
 
-# 📘 Swagger
-
-La documentación interactiva está disponible en:
-👉 `http://localhost:8080/swagger-ui/index.html`
-
-**Permite:**
-
-* Probar endpoints en tiempo real.
-* Enviar JWT desde el botón **"Authorize"**.
-* Validar esquemas de roles y respuestas.
-
----
-
-# ⚙️ Tecnologías Utilizadas
-
-* **Java 17+**
-* **Spring Boot 3+**
-* **Spring Security**
-* **JWT** (JSON Web Token)
-* **Spring Data JPA**
-* **PostgreSQL**
-* **Swagger (OpenAPI 3)**
-* **Maven**
-
----
-
-# 🧪 Cómo Ejecutar el Proyecto
-
-### 1️⃣ Clonar repositorio
-
-```bash
-git clone https://github.com/EmilioSZ989/mentorhub-api.git
-cd mentorhub-api
-
-```
-
-### 2️⃣ Configurar base de datos
-
-Editar el archivo `src/main/resources/application.yml` (o `application.properties`):
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/mentorhub_db
-    username: tu_usuario
-    password: tu_password
-
-```
-
-### 3️⃣ Ejecutar
-
-Desde tu IDE (IntelliJ/VSCode) o terminal:
-
-```bash
-mvn spring-boot:run
-
-```
-
-El servidor estará disponible en: `http://localhost:8080`
-
----
-
-# 🔄 Flujo de Prueba Completo
+# 🔄 Flujo de Prueba
 
 1. **Crear usuario:** `POST /api/users`
-2. **Login:** `POST /api/auth/login`
-* Copia el valor de `"token"` recibido.
-
-
-3. **Enviar token:** En Swagger o Postman, añade el Header:
-* `Authorization: Bearer TU_TOKEN`
-
-
-4. **Probar endpoints protegidos:**
-* Crear mentoría (como Student).
-* Aprobar/Rechazar (como Mentor).
-* Listar todo (como Admin).
-
-
+2. **Login:** `POST /api/auth/login` -> Obtener Token.
+3. **Autorizar:** Pegar token en el botón **"Authorize"** de Swagger.
+4. **Gestionar:** Crear solicitudes como estudiante y aprobarlas como mentor.
 
 ---
 
-# 📊 Estado Actual y Futuro
+# 📊 Estado del Proyecto
 
 ### ✅ Completado
 
-* Autenticación JWT y roles.
-* Gestión de estados de mentoría.
-* Manejo de errores centralizado.
-* Documentación técnica.
+* Arquitectura limpia y multientorno.
+* Seguridad JWT robusta.
+* Despliegue automatizado (CI/CD).
+* Base de datos en la nube.
 
 ### 🔮 Mejoras Futuras
 
-* **Paginación:** Implementación de `Pageable`.
-* **Soft delete:** Para usuarios y solicitudes.
-* **Auditoría:** Registro de quién modificó qué y cuándo (`Spring Data Envers`).
-* **Métricas:** Panel para el ADMIN con estadísticas.
-* **Tests:** Pruebas unitarias e integración con JUnit/Mockito.
-
----
-
-# 🌍 Despliegue (Planeado)
-
-* **Base de datos:** Neon Console (PostgreSQL Serverless).
-* **Backend:** Render / Railway.
-* **Acceso:** Swagger público para validación de reclutadores.
-
----
-
-# 📈 Nivel del Proyecto
-
-Este proyecto no es un CRUD básico. Demuestra un **Backend profesional** con seguridad real, modelado relacional correcto y una estructura escalable lista para entornos empresariales.
+* **Paginación:** Uso de `Pageable`.
+* **Soft delete:** Borrado lógico de registros.
+* **Auditoría:** Registro de cambios con `Spring Data Envers`.
+* **Tests:** Cobertura con JUnit y Mockito.
 
 ---
 
 # 👨‍💻 Autor
 
-**Emi**
-*Ingeniería Informática*
-*Proyecto práctico enfocado en arquitectura backend profesional.*
+**Emi** *Ingeniería Informática* *Enfocado en el desarrollo de arquitecturas backend escalables y seguras.*

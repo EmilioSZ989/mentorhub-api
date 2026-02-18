@@ -27,7 +27,7 @@ public class OpenApiConfig {
                                 .url("http://localhost:8080")
                                 .description("Servidor local"),
                         new Server()
-                                .url("https://mentorhub-api.onrender.com")
+                                .url("https://mentorhub-api-24gj.onrender.com")
                                 .description("Servidor producción (Render)")
                 ))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
